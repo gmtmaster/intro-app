@@ -1,98 +1,98 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+type Note = {
+    text: string;
+    createdAt: string;
+};
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
+    const [note, setNote] = useState('');
+    const [notes, setNotes] = useState<Note[]>([]);
+
+    //betöltés inditáskor
+    useEffect(() => {
+        loadNotes();
+    }, []);
+
+    const loadNotes = async () => {
+        try {
+            const store = await AsyncStorage.getItem('notes');
+            if (stored) setNotes(JSON.parse(stored));
+        } catch (e) {
+            console.log("hiba a betöltésnél: e");
+        }
+    };
+
+    const saveNotes = async (newNotes: string[]) => {
+        try {
+            await AsyncStorage.setItem('notes', JSON.stringify(newNotes));
+        } catch (e) {
+            console.log("Hiba a mentésnél: e");
+        }
+    };
+
+    const addNote = () => {
+        if (note.trim() === "") return;
+        const newNote: Note = {
+            text: note,
+            createdAt: new Date().toLocaleString(), // dátum + idő
+        };
+        const newNotes = [newNote, ...notes]; // új jegyzet előre
+        setNotes(newNotes);
+        saveNotes(newNotes);
+        setNote("");
+    };
+
+    const deleteNote = (index: number) => {
+        const newNotes = notes.filter((_, i) => i !== index);
+        setNotes(newNotes);
+        saveNotes(newNotes);
+    };
+
+    return (
+        <View style={{ flex: 1, padding: 20 }}>
+            <Text style={{ fontSize: 24, marginBottom: 10 }}>📝 Jegyzeteim</Text>
+
+            {/* Új jegyzet bevitel */}
+            <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="Írj egy jegyzetet..."
+                style={{
+                    borderWidth: 1,
+                    borderColor: "#ccc",
+                    padding: 10,
+                    borderRadius: 8,
+                    marginBottom: 10,
+                }}
             />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+            <Button title="Hozzáadás" onPress={addNote} />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
+            {/* Jegyzetek listája */}
+            <FlatList
+                data={notes}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item, index }) => (
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            padding: 10,
+                            borderBottomWidth: 1,
+                            borderBottomColor: "#eee",
+                        }}
+                    >
+                        <Text style={{ fontWeight: "bold" }}>{item.text}</Text>
+                        <Text style={{ fontSize: 12, color: "gray" }}>{item.createdAt}</Text>
+
+                        <TouchableOpacity onPress={() => deleteNote(index)}>
+                            <Text style={{ color: "red" }}>Törlés</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+            />
+        </View>
+    );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
